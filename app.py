@@ -34,7 +34,7 @@ header { visibility: hidden !important; }
 """, unsafe_allow_html=True)
 
 # --- FUNCTION: SAVE TO GOOGLE SHEETS USING GSPREAD ---
-def save_to_google_sheets(name, email, pain, budget):
+def save_to_google_sheets(name, email, budget, message):
     try:
         # 1. Load credentials from Render secret file
         creds_path = "/etc/secrets/sheets_credentials.json"
@@ -49,14 +49,14 @@ def save_to_google_sheets(name, email, pain, budget):
         creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
         client = gspread.authorize(creds)
 
-        # 3. Open the sheet by ID (the same one you've been using)
+        # 3. Open the sheet by ID
         sheet_id = "1HgVeJsSivhZEAQpITk9SRbXEvqtdiWf65P_btPfHnf0"
         sh = client.open_by_key(sheet_id)
         worksheet = sh.sheet1
 
-        # 4. Prepare row
+        # 4. Prepare row: Name, Email, Budget, Message, Timestamp
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        row_data = [name, email, pain, budget, timestamp]
+        row_data = [name, email, budget, message, timestamp]
 
         # 5. Append
         worksheet.append_row(row_data)
@@ -114,7 +114,7 @@ st.markdown("""
     }
     .contact-form label { color: #ddd !important; font-size: 0.9rem !important; }
     
-    /* ---- Force textarea (pain field) to be white with black text ---- */
+    /* ---- Force textarea (message field) to be white with black text ---- */
     .stTextArea textarea {
         background: #ffffff !important;
         color: #000000 !important;
@@ -279,7 +279,7 @@ with tab1:
         st.success("🔥 Let's build it! Contact me below.")
 
 with tab2:
-    # ----- SEO AUDIT TAB with EMAIL field (NOW SAVES TO SHEETS via GSPREAD) -----
+    # ----- SEO AUDIT TAB with EMAIL field -----
     st.markdown("### 🚀 Free Instant SEO Audit")
     st.write("Enter your website URL and email to get a quick SEO health check + actionable fixes.")
 
@@ -292,12 +292,17 @@ with tab2:
                 # Run the audit
                 result = quick_audit(url_input)
                 
-                # --- SAVE EMAIL TO GOOGLE SHEETS USING GSPREAD ---
+                # --- SAVE TO GOOGLE SHEETS ---
+                # Column 1: URL (so you see the domain)
+                # Column 2: Email
+                # Column 3: Budget (blank)
+                # Column 4: Message (SEO Audit)
+                # Column 5: Timestamp
                 save_success, save_error = save_to_google_sheets(
-                    name="SEO Audit User",
+                    name=url_input,      # <-- URL goes in Column 1
                     email=email_audit,
-                    pain=f"URL: {url_input}",
-                    budget="N/A"
+                    budget="",
+                    message="SEO Audit"
                 )
                 if not save_success:
                     st.warning(f"Email was captured but could not save to sheet: {save_error}")
@@ -467,22 +472,22 @@ with st.container():
             email = st.text_input("📧 Your Email", placeholder="juan@example.com")
             budget = st.selectbox("💰 Budget Range", ["$1.5K - Starter", "$4K - Standard", "$7K - Premium", "Flexible"])
         with col2:
-            pain = st.text_area("😤 What workflow is broken?", placeholder="I'm spending $500/mo on 5 tools that break...", height=100)
+            message = st.text_area("😤 What workflow is broken?", placeholder="I'm spending $500/mo on 5 tools that break...", height=100)
         
         submitted = st.form_submit_button("⚡ Send - Let's Build It")
         
         if submitted:
-            if name and email and pain:
-                success, error = save_to_google_sheets(name, email, pain, budget)
+            if name and email and message:
+                success, error = save_to_google_sheets(name, email, budget, message)
                 if success:
                     st.success(f"🔥 {name}! Let's fix your workflow. I'll reach out to {email} within 24 hours.")
                     st.info("✅ Your message was saved to Google Sheets.")
                 else:
                     st.error(f"❌ Failed to save to Google Sheets: {error}")
                     st.info("📝 Your message was received, but the sheet wasn't updated. I'll manually check.")
-                    st.json({"name": name, "email": email, "pain": pain, "budget": budget})
+                    st.json({"name": name, "email": email, "message": message, "budget": budget})
             else:
-                st.error("⚠️ Please fill in Name, Email, and Pain fields.")
+                st.error("⚠️ Please fill in Name, Email, and Message fields.")
     
     st.markdown('</div>', unsafe_allow_html=True)
 
