@@ -53,11 +53,9 @@ st.markdown("""
         background-color: #1e222b !important;
         color: #e0e0e0 !important;
     }
-    /* Divider */
     hr {
         border-color: #2a2f3a;
     }
-    /* Card-like sections */
     .bot-card {
         background-color: #161b22;
         border-radius: 12px;
@@ -145,7 +143,7 @@ st.subheader("📩 Ready to start? Drop your details.")
 with st.form(key="lead_form", clear_on_submit=True):
     # ---- FIELDS ----
     name = st.text_input("Full Name *", placeholder="e.g. John Carter")
-    email = st.text_input("Email Address *", placeholder="john@company.com")   # <-- NEW FIELD
+    email = st.text_input("Email Address *", placeholder="john@company.com")   # <-- NEW
     budget = st.selectbox(
         "Budget Range",
         options=["$1.5K", "$4K", "$7K"],
@@ -160,42 +158,29 @@ with st.form(key="lead_form", clear_on_submit=True):
     submitted = st.form_submit_button("🚀 Send Lead")
 
     if submitted:
-        # Basic validation
         if not name.strip():
             st.error("Please enter your name.")
         elif not email.strip() or "@" not in email:
-            st.error("Please enter a valid email address (e.g., name@domain.com).")
+            st.error("Please enter a valid email address.")
         else:
-            # ---------- GOOGLE SHEETS INTEGRATION ----------
             try:
-                # 1. Load credentials from Render secret file
                 creds_path = "/etc/secrets/sheets_credentials.json"
                 if not os.path.exists(creds_path):
-                    st.error("🔐 Credentials file not found. Please add 'sheets_credentials.json' as a Secret File in Render.")
+                    st.error("🔐 Credentials file not found.")
                 else:
                     with open(creds_path, "r") as f:
                         creds_dict = json.load(f)
-
-                    # 2. Authorize gspread
                     gc = gspread.service_account_from_dict(creds_dict)
-
-                    # 3. Open the sheet by ID (from your report)
                     sheet_id = "1HgVeJsSivhZEAQpITk9SRbXEvqtdiWf65P_btPfHnf0"
                     sh = gc.open_by_key(sheet_id)
                     worksheet = sh.sheet1
-
-                    # 4. Prepare row (ORDER: Name, Email, Budget, Message, Timestamp)
                     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    row_data = [name.strip(), email.strip(), budget, message.strip(), timestamp]
-
-                    # 5. Append
+                    row_data = [name.strip(), email.strip(), budget, message.strip(), timestamp]   # <-- email added
                     worksheet.append_row(row_data)
-
-                    # 6. Success (no balloons, no confetti – just a clean message)
-                    st.success(f"🔥 {name}! We've saved your details. We'll reach out to {email} within 24 hours. ✅ Your message was saved to Google Sheets.")
+                    st.success(f"🔥 {name}! We'll reach out to {email} within 24 hours. ✅ Saved!")
 
             except gspread.exceptions.SpreadsheetNotFound:
-                st.error("❌ Google Sheet not found. Check the Sheet ID and make sure the service account has Editor access.")
+                st.error("❌ Google Sheet not found.")
             except Exception as e:
                 st.error(f"⚠️ Something went wrong: {str(e)}")
 
