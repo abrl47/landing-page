@@ -35,7 +35,7 @@ def save_to_google_sheets(name, email, pain, budget):
     payload = {
         "timestamp": datetime.now().isoformat(),
         "name": name,
-        "email": email,          # <-- NEW
+        "email": email,
         "pain": pain,
         "budget": budget
     }
@@ -94,6 +94,20 @@ st.markdown("""
         box-shadow: 0 0 0 2px rgba(0, 255, 136, 0.2);
     }
     .contact-form label { color: #ddd !important; font-size: 0.9rem !important; }
+    
+    /* ---- Force textarea (pain field) to be white with black text ---- */
+    .stTextArea textarea {
+        background: #ffffff !important;
+        color: #000000 !important;
+        border: 1px solid #cccccc !important;
+        border-radius: 8px !important;
+        padding: 0.8rem !important;
+        font-family: 'JetBrains Mono', monospace !important;
+    }
+    .stTextArea textarea::placeholder {
+        color: #666666 !important;
+        opacity: 1 !important;
+    }
     
     /* Submit button: white background + black text for maximum contrast */
     .stButton button {
@@ -410,7 +424,7 @@ with st.container():
         col1, col2 = st.columns(2)
         with col1:
             name = st.text_input("👤 Your Name", placeholder="Juan Dela Cruz")
-            email = st.text_input("📧 Your Email", placeholder="juan@example.com")   # <-- NEW
+            email = st.text_input("📧 Your Email", placeholder="juan@example.com")
             budget = st.selectbox("💰 Budget Range", ["$1.5K - Starter", "$4K - Standard", "$7K - Premium", "Flexible"])
         with col2:
             pain = st.text_area("😤 What workflow is broken?", placeholder="I'm spending $500/mo on 5 tools that break...", height=100)
