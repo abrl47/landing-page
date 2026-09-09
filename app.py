@@ -261,17 +261,30 @@ with tab1:
         st.success("🔥 Let's build it! Contact me below.")
 
 with tab2:
-    # ----- SEO AUDIT TAB with EMAIL field -----
+    # ----- SEO AUDIT TAB with EMAIL field (NOW SAVES TO SHEETS) -----
     st.markdown("### 🚀 Free Instant SEO Audit")
     st.write("Enter your website URL and email to get a quick SEO health check + actionable fixes.")
 
     url_input = st.text_input("Website URL", placeholder="https://example.com")
-    email_audit = st.text_input("Your Email *", placeholder="you@example.com")   # <-- NEW EMAIL FIELD
+    email_audit = st.text_input("Your Email *", placeholder="you@example.com")
 
     if st.button("Run Audit", key="audit_btn"):
         if url_input and email_audit:
             with st.spinner("Auditing... this may take a few seconds."):
+                # Run the audit
                 result = quick_audit(url_input)
+                
+                # --- SAVE EMAIL TO GOOGLE SHEETS ---
+                save_success, save_error = save_to_google_sheets(
+                    name="SEO Audit User",
+                    email=email_audit,
+                    pain=f"URL: {url_input}",
+                    budget="N/A"
+                )
+                if not save_success:
+                    st.warning(f"Email was captured but could not save to sheet: {save_error}")
+                
+                # Display results
                 col1, col2 = st.columns(2)
                 with col1:
                     st.metric("Page Title", result["title"])
@@ -288,7 +301,7 @@ with tab2:
                 st.warning(f"3️⃣ {result['fix_3']}")
 
                 st.markdown("---")
-                st.markdown(f"**Thanks {email_audit}!** Want these fixed automatically? That's exactly what my **SEO Automation Bot** does. [Contact me](#contact) to build one for you.")
+                st.markdown(f"**Thanks {email_audit}!** Your email has been captured. Want these fixed automatically? That's exactly what my **SEO Automation Bot** does. [Contact me](#contact) to build one for you.")
         elif not url_input:
             st.error("Please enter a valid URL.")
         else:
