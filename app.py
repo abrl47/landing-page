@@ -1,8 +1,11 @@
 # app.py - Survival Automation Landing Page
-# Standalone version with Apps Script web app for contact form
+# Uses gspread for Google Sheets (no Apps Script)
 
 import streamlit as st
-import requests
+import gspread
+from google.oauth2.service_account import Credentials
+import json
+import os
 from datetime import datetime
 from audit import quick_audit
 
@@ -30,22 +33,37 @@ header { visibility: hidden !important; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- FUNCTION: SAVE TO GOOGLE SHEETS VIA APPS SCRIPT ---
+# --- FUNCTION: SAVE TO GOOGLE SHEETS USING GSPREAD ---
 def save_to_google_sheets(name, email, pain, budget):
-    url = "https://script.google.com/macros/s/AKfycbzur22-bXFFjn2LPAhzSq_qPSgJI3XDXLJU00wNJsiPRbCPphltcetUWDaXi25G63Je/exec"
-    payload = {
-        "timestamp": datetime.now().isoformat(),
-        "name": name,
-        "email": email,
-        "pain": pain,
-        "budget": budget
-    }
     try:
-        response = requests.post(url, json=payload, timeout=10)
-        if response.status_code == 200:
-            return True, None
-        else:
-            return False, f"HTTP {response.status_code}: {response.text[:200]}"
+        # 1. Load credentials from Render secret file
+        creds_path = "/etc/secrets/sheets_credentials.json"
+        if not os.path.exists(creds_path):
+            return False, "Credentials file not found. Please add 'sheets_credentials.json' as a Secret File in Render."
+
+        with open(creds_path, "r") as f:
+            creds_dict = json.load(f)
+
+        # 2. Authorize using service account
+        scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+        creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+        client = gspread.authorize(creds)
+
+        # 3. Open the sheet by ID (the same one you've been using)
+        sheet_id = "1HgVeJsSivhZEAQpITk9SRbXEvqtdiWf65P_btPfHnf0"
+        sh = client.open_by_key(sheet_id)
+        worksheet = sh.sheet1
+
+        # 4. Prepare row
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        row_data = [name, email, pain, budget, timestamp]
+
+        # 5. Append
+        worksheet.append_row(row_data)
+        return True, None
+
+    except gspread.exceptions.SpreadsheetNotFound:
+        return False, "Spreadsheet not found – check the sheet ID and permissions."
     except Exception as e:
         return False, str(e)
 
@@ -261,7 +279,7 @@ with tab1:
         st.success("🔥 Let's build it! Contact me below.")
 
 with tab2:
-    # ----- SEO AUDIT TAB with EMAIL field (NOW SAVES TO SHEETS) -----
+    # ----- SEO AUDIT TAB with EMAIL field (NOW SAVES TO SHEETS via GSPREAD) -----
     st.markdown("### 🚀 Free Instant SEO Audit")
     st.write("Enter your website URL and email to get a quick SEO health check + actionable fixes.")
 
@@ -274,7 +292,7 @@ with tab2:
                 # Run the audit
                 result = quick_audit(url_input)
                 
-                # --- SAVE EMAIL TO GOOGLE SHEETS ---
+                # --- SAVE EMAIL TO GOOGLE SHEETS USING GSPREAD ---
                 save_success, save_error = save_to_google_sheets(
                     name="SEO Audit User",
                     email=email_audit,
@@ -283,6 +301,8 @@ with tab2:
                 )
                 if not save_success:
                     st.warning(f"Email was captured but could not save to sheet: {save_error}")
+                else:
+                    st.success("✅ Email saved to Google Sheets.")
                 
                 # Display results
                 col1, col2 = st.columns(2)
