@@ -4,6 +4,7 @@
 import streamlit as st
 import requests
 from datetime import datetime
+from audit import quick_audit
 
 # --- PAGE CONFIG ---
 st.set_page_config(
@@ -173,10 +174,10 @@ with col1:
     col_a, col_b = st.columns(2)
     with col_a:
         if st.button("⚡ See Live Bots", use_container_width=True):
-            pass  # removed balloons
+            pass
     with col_b:
         if st.button("💰 Book Build - $4-7K", use_container_width=True):
-            pass  # removed balloons
+            pass
 
 with col2:
     st.markdown("""
@@ -227,7 +228,8 @@ st.divider()
 st.markdown('<h2 class="section-title" id="bots">🤖 Live Bots</h2>', unsafe_allow_html=True)
 st.markdown('<p class="section-sub">All built with Python + Spite. $0 to run. You own them.</p>', unsafe_allow_html=True)
 
-tab1, tab2 = st.tabs(["📈 SEO Automation", "🎙️ Voice Agent (Coming)"])
+# --- TABS: only SEO Automation and Free SEO Audit ---
+tab1, tab2 = st.tabs(["📈 SEO Automation", "🔍 Free SEO Audit"])
 
 with tab1:
     col1, col2 = st.columns([2, 1])
@@ -259,33 +261,38 @@ with tab1:
         st.success("🔥 Let's build it! Contact me below.")
 
 with tab2:
-    col1, col2 = st.columns([2, 1])
-    with col1:
-        st.markdown("""
-        <div class="bot-card">
-            <h3>🎙️ Voice AI Agent</h3>
-            <p style="color: #aaa;">$0 voice agent that answers calls, books appointments, and qualifies leads.</p>
-            <div>
-                <span class="stack">Python</span>
-                <span class="stack">Edge-TTS</span>
-                <span class="stack">Groq (Free)</span>
-                <span class="stack">Twilio (Optional)</span>
-            </div>
-            <p class="cost">Cost to run: $0</p>
-            <p style="color: #666; font-size: 0.8rem;">Coming soon - Q4 2025</p>
-        </div>
-        """, unsafe_allow_html=True)
-    with col2:
-        st.markdown("""
-        <div style="background: #111; border-radius: 12px; padding: 1rem; text-align: center; border: 1px solid #222; height: 100%; display: flex; flex-direction: column; justify-content: center;">
-            <div style="font-size: 4rem;">🎙️</div>
-            <div style="color: #00FF88; font-weight: 700;">Coming Soon</div>
-            <div style="color: #666; font-size: 0.8rem;">$0 Voice Agent</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    if st.button("🔔 Notify me when ready", key="voice_agent_btn"):
-        st.success("📝 I'll let you know! Join the waitlist below.")
+    # ----- SEO AUDIT TAB with EMAIL field -----
+    st.markdown("### 🚀 Free Instant SEO Audit")
+    st.write("Enter your website URL and email to get a quick SEO health check + actionable fixes.")
+
+    url_input = st.text_input("Website URL", placeholder="https://example.com")
+    email_audit = st.text_input("Your Email *", placeholder="you@example.com")   # <-- NEW EMAIL FIELD
+
+    if st.button("Run Audit", key="audit_btn"):
+        if url_input and email_audit:
+            with st.spinner("Auditing... this may take a few seconds."):
+                result = quick_audit(url_input)
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.metric("Page Title", result["title"])
+                    st.metric("Speed Score", f"{result['speed_score']}/100")
+                    st.metric("H1 Count", result["h1_count"])
+                with col2:
+                    st.metric("Word Count", result["word_count"])
+                    st.metric("Meta Description", "✅ Present" if result["has_meta"] else "❌ Missing")
+                    st.metric("External Links (sellable spots)", result["link_spots"])
+
+                st.markdown("### 🔧 Top 3 Fixes")
+                st.success(f"1️⃣ {result['fix_1']}")
+                st.info(f"2️⃣ {result['fix_2']}")
+                st.warning(f"3️⃣ {result['fix_3']}")
+
+                st.markdown("---")
+                st.markdown(f"**Thanks {email_audit}!** Want these fixed automatically? That's exactly what my **SEO Automation Bot** does. [Contact me](#contact) to build one for you.")
+        elif not url_input:
+            st.error("Please enter a valid URL.")
+        else:
+            st.error("Please enter your email address.")
 
 st.divider()
 
